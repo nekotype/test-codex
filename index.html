@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>足し算計算ゲーム</title>
+  <style>
+    :root {
+      --accent: #1e88e5;
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #333;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: var(--card);
+      width: min(520px, 90vw);
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 1.4rem;
+      letter-spacing: 0.02em;
+    }
+    p.description {
+      margin: 0 0 18px;
+      color: #555;
+      line-height: 1.6;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      box-shadow: 0 4px 14px rgba(30, 136, 229, 0.35);
+    }
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); box-shadow: none; }
+    button:disabled { background: #a4c6ec; cursor: not-allowed; box-shadow: none; }
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .question-box {
+      background: #eef5ff;
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      border: 1px solid #d9e6ff;
+      font-size: 1.1rem;
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    input[type="number"] {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 1.05rem;
+      border-radius: 8px;
+      border: 1px solid #cfd8e3;
+    }
+    #feedback { margin: 12px 0 0; min-height: 24px; font-weight: 600; }
+    #result { margin-top: 18px; padding: 14px; background: #f0f4f8; border-radius: 10px; border: 1px solid #d7e2ec; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>足し算計算ゲーム</h1>
+    <p class="description">スタートを押すとランダムな足し算が5問出題されます。入力して送信すると次の問題へ進み、最後にスピードと正解率が表示されます。</p>
+
+    <div class="controls">
+      <button id="startBtn">スタート</button>
+      <div id="timer">経過時間: 0.00 秒</div>
+    </div>
+
+    <div id="game" style="display:none;">
+      <div class="status-row">
+        <div id="progress">0 / 5 問</div>
+        <div id="correct">正解数: 0</div>
+      </div>
+      <div class="question-box" id="question">ここに問題が表示されます</div>
+      <div class="input-row">
+        <input type="number" id="answer" inputmode="numeric" autocomplete="off" placeholder="答えを入力" />
+        <button id="submitBtn">送信</button>
+      </div>
+      <div id="feedback"></div>
+    </div>
+
+    <div id="result" style="display:none;"></div>
+  </main>
+
+  <script>
+    const totalQuestions = 5;
+    const startBtn = document.getElementById('startBtn');
+    const gameBox = document.getElementById('game');
+    const timerEl = document.getElementById('timer');
+    const progressEl = document.getElementById('progress');
+    const correctEl = document.getElementById('correct');
+    const questionEl = document.getElementById('question');
+    const answerInput = document.getElementById('answer');
+    const submitBtn = document.getElementById('submitBtn');
+    const feedbackEl = document.getElementById('feedback');
+    const resultEl = document.getElementById('result');
+
+    let current = 0;
+    let correct = 0;
+    let startTime = 0;
+    let timerId = null;
+    let a = 0;
+    let b = 0;
+
+    function formatSeconds(ms) {
+      return (ms / 1000).toFixed(2);
+    }
+
+    function updateTimer() {
+      const elapsed = Date.now() - startTime;
+      timerEl.textContent = `経過時間: ${formatSeconds(elapsed)} 秒`;
+    }
+
+    function startTimer() {
+      startTime = Date.now();
+      updateTimer();
+      timerId = setInterval(updateTimer, 100);
+    }
+
+    function stopTimer() {
+      if (timerId) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+    }
+
+    function nextQuestion() {
+      if (current === totalQuestions) {
+        endGame();
+        return;
+      }
+      a = Math.floor(Math.random() * 20) + 1;
+      b = Math.floor(Math.random() * 20) + 1;
+      progressEl.textContent = `${current + 1} / ${totalQuestions} 問`;
+      questionEl.textContent = `${current + 1}問目: ${a} + ${b} = ?`;
+      feedbackEl.textContent = '';
+      answerInput.value = '';
+      answerInput.focus();
+    }
+
+    function endGame() {
+      stopTimer();
+      gameBox.style.display = 'none';
+      const totalTime = Date.now() - startTime;
+      const accuracy = (correct / totalQuestions) * 100;
+      resultEl.innerText = `スピード: ${formatSeconds(totalTime)} 秒\n正解率: ${accuracy.toFixed(0)}% (${correct}/${totalQuestions})`;
+      resultEl.style.display = 'block';
+      startBtn.disabled = false;
+      startBtn.textContent = 'もう一度プレイ';
+    }
+
+    function submitAnswer() {
+      if (current >= totalQuestions) return;
+      const userAns = Number.parseInt(answerInput.value, 10);
+      if (Number.isNaN(userAns)) {
+        feedbackEl.textContent = '数字を入力してください。';
+        answerInput.focus();
+        return;
+      }
+
+      const isCorrect = userAns === a + b;
+      if (isCorrect) {
+        correct++;
+        feedbackEl.textContent = '⭕ 正解！';
+      } else {
+        feedbackEl.textContent = `❌ 不正解 (${a} + ${b} = ${a + b})`;
+      }
+      correctEl.textContent = `正解数: ${correct}`;
+      current++;
+      setTimeout(nextQuestion, 400);
+    }
+
+    startBtn.addEventListener('click', () => {
+      current = 0;
+      correct = 0;
+      startBtn.disabled = true;
+      resultEl.style.display = 'none';
+      gameBox.style.display = 'block';
+      correctEl.textContent = '正解数: 0';
+      progressEl.textContent = `0 / ${totalQuestions} 問`;
+      startTimer();
+      nextQuestion();
+    });
+
+    submitBtn.addEventListener('click', submitAnswer);
+    answerInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        submitAnswer();
+      }
+    });
+  </script>
+</body>
+</html>
